@@ -2,21 +2,19 @@ package org.lizaalert;
 
 import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
+import java.io.File;
+
 public class PrepareNavigator {
     public static void main(String[] args) {
-        PrepareNavigatorConfig initialConfig = new PrepareNavigatorConfig(args);
+        InitialConfig initialConfig = new InitialConfig(args);
         if (initialConfig.showHelp) {
             showHelp();
         } else {
-            String actualWorkingDir = initialConfig.resolveWorkingDir();
-            String actualDisk;
-            if (initialConfig.isDiskDefault()) {
-                actualDisk = resolveDisk();
-            } else {
-                actualDisk = initialConfig.disk;
-            }
-            PrepareNavigatorConfig preparedConfig = new PrepareNavigatorConfig(initialConfig.operationName, actualDisk, actualWorkingDir);
-
+            ValidConfig preparedConfig = new ValidConfig(
+                    initialConfig.operationName,
+                    initialConfig.resolveDisk(),
+                    initialConfig.resolveWorkingDir()
+            );
 
             if (currentPackageIsValid()) {
                 downloadPackage();

@@ -6,7 +6,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
 import java.util.List;
 
-public class PrepareNavigatorConfig {
+public class InitialConfig {
     public final String operationName;
     public final String disk;
     public final String workingDir;
@@ -16,7 +16,7 @@ public class PrepareNavigatorConfig {
     public static final String DATE_FORMAT = "yyyy-MM-dd";
     public static final DateTimeFormatter format = DateTimeFormatter.ofPattern(DATE_FORMAT);
 
-    public PrepareNavigatorConfig(String[] argsArray) {
+    public InitialConfig(String[] argsArray) {
         List<String> args = Arrays.asList(argsArray);
         int index = args.indexOf("-help");
         if (index >= 0 || args.isEmpty()) {
@@ -68,6 +68,7 @@ public class PrepareNavigatorConfig {
                 this.workingDir = DEFAULT_PARAM;
             }
         }
+        System.out.println(this.toString());
     }
 
     public static boolean isNameValid(String value) {
@@ -80,24 +81,6 @@ public class PrepareNavigatorConfig {
         } else return false;
     }
 
-    public PrepareNavigatorConfig(String operationName, String disk, String workingDir) {
-        if (!isNameValid(operationName)) {
-            throw new IllegalArgumentException("-name is required, but passed value does not match pattern yyyy-MM-dd_Place");
-        }
-        this.operationName = operationName;
-        if (disk.trim().isEmpty()) {
-            this.disk = DEFAULT_PARAM;
-        } else {
-            this.disk = disk;
-        }
-        if (workingDir.trim().isEmpty() || workingDir.trim().equals(".")) {
-            this.workingDir = DEFAULT_PARAM;
-        } else {
-            this.workingDir = workingDir;
-        }
-        this.showHelp = false;
-    }
-
     public boolean isWorkingDirDefault() {
         return workingDir.equals(DEFAULT_PARAM);
     }
@@ -106,44 +89,61 @@ public class PrepareNavigatorConfig {
         return disk.equals(DEFAULT_PARAM);
     }
 
-    public String resolveWorkingDir() {
-        File dir;
-        dir = new File(workingDir);
-        if (workingDir.equals(DEFAULT_PARAM)) {
-            dir = new File("./" + operationName);
-            System.out.println("Default working dir was resolved to " + dir.getAbsolutePath());
-        } else if (!dir.isDirectory()) {
-            dir = new File("./" + operationName);
-            System.out.println("Specified working dir is not directory '" + workingDir + "'. Falling back to default " + dir.getAbsolutePath());
+    public File resolveWorkingDir() {
+        File workingDir;
+        workingDir = new File(this.workingDir);
+        if (this.workingDir.equals(DEFAULT_PARAM)) {
+            workingDir = new File("./" + operationName);
+            System.out.println("Default working dir was resolved to " + workingDir.getAbsolutePath());
+        } else if (!workingDir.isDirectory()) {
+            workingDir = new File("./" + operationName);
+            System.out.println("Specified working dir is not directory '" + this.workingDir + "'. Falling back to default " + workingDir.getAbsolutePath());
         } else {
-            System.out.println("Working directory is " + dir.getAbsolutePath());
+            System.out.println("Working directory is " + workingDir.getAbsolutePath());
         }
 
-        return dir.getAbsolutePath();
+        return workingDir;
     }
 
-    public String resolveDisk() {
-        File dir;
-        dir = new File(disk);
-        if (!dir.isDirectory()) {
-            System.out.println("Specified disk is not directory '" + disk + "'.");
+    public static final String gpxSubdirectory = "/Garmin/GPX/Current";
+
+    public File resolveDisk() {
+        File navigatorRoot;
+        navigatorRoot = new File(disk);
+
+        File gpxDir = new File(navigatorRoot + gpxSubdirectory);
+        if (gpxDir.exists()) {
+            System.out.println("Specified directory '" + navigatorRoot.getAbsolutePath() + "' does not contain gps directory '" + gpxSubdirectory + "'");
         }
-        if (disk.equals(DEFAULT_PARAM) || !dir.isDirectory()) {
+        if (disk.equals(DEFAULT_PARAM) || !navigatorRoot.isDirectory()) {
             File[] paths = File.listRoots();
             System.out.println("Resolving default disk");
             System.out.println("Found " + paths.length + " root drives ");
+            boolean found = false;
             for (File path : paths) {
-                String[] list = path.list();
-                if (list != null) {
-                    List<String> contents = Arrays.asList(list);
-                    if (contents.contains("Garmin")) {
-                        dir = path;
-
-                    }
+                gpxDir = new File(path.getAbsolutePath() + gpxSubdirectory);
+                if (gpxDir.exists()) {
+                    System.out.println("Found gpx directory '" + gpxSubdirectory + "' in disk " + path.getAbsolutePath());
+                    navigatorRoot = path;
+                    found = true;
+                    break;
                 }
             }
+            if (!found) {
+                System.out.println("Can't find connected navigator");
+            }
         }
-        return dir.getAbsolutePath();
+        return navigatorRoot;
+    }
+
+    @Override
+    public String toString() {
+        return "PrepareNavigatorConfig{" +
+                "operationName='" + operationName + '\'' +
+                ", disk='" + disk + '\'' +
+                ", workingDir='" + workingDir + '\'' +
+                ", showHelp=" + showHelp +
+                '}';
     }
 
     public static boolean directoryIsValid() {
