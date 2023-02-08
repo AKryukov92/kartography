@@ -1,8 +1,6 @@
-package org.lizaaler;
+package org.lizaalert;
 
 import org.junit.jupiter.api.Test;
-import org.lizaalert.InitialConfig;
-import org.lizaalert.ValidConfig;
 
 import java.io.File;
 
