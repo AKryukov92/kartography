@@ -36,4 +36,23 @@ public class ValidConfig {
         return new File(workingDir + "/4-Garmin");
     }
 
+    public String getBirdsEyeFilename() {
+        return "/Garmin/BirdsEye/" + operationName + "_Satell_z17.jnx";
+    }
+
+    public String getGGC16Filename() {
+        return "/Garmin/CustomMaps/" + operationName + "_Topo_GGC_z16.kmz";
+    }
+
+    public String getOTM17Filename() {
+        return "/Garmin/CustomMaps/" + operationName + "_Topo_OTM_z17.kmz";
+    }
+
+    public String getGrid500Filename() {
+        return "/Garmin/GPX/" + operationName + "_500m.gpx";
+    }
+
+    public String getGrid200Filename() {
+        return "/Garmin/GPX/" + operationName + "_200m.gpx";
+    }
 }

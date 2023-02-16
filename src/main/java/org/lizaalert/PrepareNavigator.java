@@ -33,20 +33,37 @@ public class PrepareNavigator {
                 downloadPackage(validConfig);
             } else {
                 File file = validConfig.get4GarminLocalZipname();
-                LocalDateTime lastModified = LocalDateTime.ofInstant(Instant.ofEpochMilli(
-                        file.lastModified()),
-                        TimeZone.getDefault().toZoneId()
-                );
+                LocalDateTime lastModified = timestampToLocalDateTime(file.lastModified());
                 System.out.println("Package already downloaded " + file.getAbsolutePath() + " at " + formatter.format(lastModified));
             }
-            if (!currentPackageIsValid(validConfig)) {
+            if (isCurrentPackageInvalid(validConfig)) {
+                System.out.println("Package is not valid. Cleaning up.");
                 cleanup(validConfig);
                 unzipPackage(validConfig);
+                System.out.println("Validating after cleanup.");
+                if (isCurrentPackageInvalid(validConfig)) {
+                    System.out.println("Cleanup didn't help. Archive is invalid.");
+                } else {
+                    System.out.println("Package is valid. Loading it to navigator");
+                    resetSettings();
+                    cleanup();
+                    deployPackage();
+                }
+            } else {
+                System.out.println("Package is valid. Loading it to navigator");
+                resetSettings();
+                cleanup();
+                deployPackage();
             }
-            resetSettings();
-            cleanup();
-            deployPackage();
+
         }
+    }
+
+    public static LocalDateTime timestampToLocalDateTime(long unixTimestamp) {
+        return LocalDateTime.ofInstant(
+                Instant.ofEpochMilli(unixTimestamp),
+                TimeZone.getDefault().toZoneId()
+        );
     }
 
     public static String resolveDisk() {
@@ -60,9 +77,46 @@ public class PrepareNavigator {
         System.out.println("-workdir\tName of working directory. By default it is subdirectory named after search.");
     }
 
-    public static boolean currentPackageIsValid(ValidConfig config) {
-        //config.workingDir
-        return false;
+    public static boolean isCurrentPackageInvalid(ValidConfig config) {
+        File birdsEyeMap = new File(config.get4GarminLocalDirectory() + config.getBirdsEyeFilename());
+        if (birdsEyeMap.exists()) {
+            System.out.println("Package contain birdsEye satellite map");
+        } else {
+            System.out.println("birdsEye satellite map is missing");
+        }
+        File ggc16Map = new File(config.get4GarminLocalDirectory() + config.getGGC16Filename());
+        File otm17Map = new File(config.get4GarminLocalDirectory() + config.getOTM17Filename());
+        if (ggc16Map.exists()) {
+            System.out.println("Package contain GGC_z16 topo map");
+        }
+        if (otm17Map.exists()) {
+            System.out.println("Package contain OTM_z17 topo map");
+        }
+        if (!ggc16Map.exists() && !otm17Map.exists()){
+            System.out.println("topo maps are missing");
+        }
+        if (ggc16Map.exists() && otm17Map.exists()) {
+            System.out.println("WARNING: Multiple topo maps exists");
+        }
+
+        File grid500 = new File(config.get4GarminLocalDirectory() + config.getGrid500Filename());
+        File grid200 = new File(config.get4GarminLocalDirectory() + config.getGrid200Filename());
+        if (grid500.exists()) {
+            System.out.println("Package contain grid 500 meters");
+        }
+        if (grid200.exists()) {
+            System.out.println("Package contain grid 200 meters");
+        }
+        if (!grid200.exists() && !grid500.exists()) {
+            System.out.println("grid file is missing");
+        }
+        if (grid200.exists() && grid500.exists()) {
+            System.out.println("WARNING: Package contains multiple grids");
+        }
+
+        boolean topoMapExists = ggc16Map.exists() || otm17Map.exists();
+        boolean gridExists = grid500.exists() || grid200.exists();
+        return !topoMapExists || !birdsEyeMap.exists() || !gridExists;
     }
 
     public static void cleanup(ValidConfig config) {
